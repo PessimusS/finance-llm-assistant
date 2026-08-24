@@ -1,11 +1,13 @@
 # file: inference/gradio_app.py
 import gradio as gr
 import torch
+from pathlib import Path
 from transformers import AutoTokenizer, AutoModelForCausalLM
 from peft import PeftModel
 
 BASE_MODEL = "Qwen/Qwen2.5-3B"
-ADAPTER_PATH = "../models/finance-qlora"  # 相对 training 脚本输出位置
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
+ADAPTER_PATH = PROJECT_ROOT / "output" / "lora-finance"
 
 def load_model():
     print("Loading tokenizer...")
@@ -23,8 +25,15 @@ def respond(prompt, max_new_tokens=200, temperature=0.1):
     input_text = prompt if prompt.endswith("\n") else prompt + "\n"
     inputs = tokenizer(input_text, return_tensors="pt").to(model.device)
     with torch.no_grad():
-        outputs = model.generate(**inputs, max_new_tokens=int(max_new_tokens), temperature=float(temperature))
-    text = tokenizer.decode(outputs[0], skip_special_tokens=True)
+        resolved_temperature = float(temperature)
+        outputs = model.generate(
+            **inputs,
+            max_new_tokens=int(max_new_tokens),
+            do_sample=resolved_temperature > 0,
+            temperature=max(resolved_temperature, 1e-5),
+        )
+    generated = outputs[0][inputs["input_ids"].shape[1]:]
+    text = tokenizer.decode(generated, skip_special_tokens=True)
     return text
 
 with gr.Blocks() as demo:

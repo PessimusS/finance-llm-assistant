@@ -2,9 +2,11 @@
 from transformers import AutoTokenizer, AutoModelForCausalLM
 from peft import PeftModel
 import torch
+from pathlib import Path
 
 BASE_MODEL = "Qwen/Qwen2.5-3B"
-ADAPTER_PATH = "./models/finance-qlora"
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
+ADAPTER_PATH = PROJECT_ROOT / "output" / "lora-finance"
 
 print("Loading tokenizer...")
 tokenizer = AutoTokenizer.from_pretrained(BASE_MODEL, trust_remote_code=True, use_fast=False)
@@ -26,4 +28,5 @@ while True:
     inputs = tokenizer(q, return_tensors="pt").to(model.device)
     with torch.no_grad():
         out = model.generate(**inputs, max_new_tokens=200)
-    print("Assistant:", tokenizer.decode(out[0], skip_special_tokens=True))
+    generated = out[0][inputs["input_ids"].shape[1]:]
+    print("Assistant:", tokenizer.decode(generated, skip_special_tokens=True))

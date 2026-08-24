@@ -13,7 +13,10 @@
 """
 
 from datasets import load_dataset
-import os, json, random, re
+import json
+import os
+import random
+import re
 
 OUT_DIR = "data"
 TRAIN_PATH = os.path.join(OUT_DIR, "train.jsonl")
@@ -22,6 +25,7 @@ TEST_PATH = os.path.join(OUT_DIR, "test.jsonl")
 
 # 配置：首次跑用小样本验证流程（设 None 表示不截断）
 SAMPLE_SIZE = 5000
+RANDOM_SEED = 42
 
 # 哪些 task_type 我们认为是“问答相关”，字符串匹配（小写）
 QA_KEYWORDS = ["qa", "question", "conversation", "yes_no"]
@@ -135,7 +139,7 @@ def main():
         samples = samples[:SAMPLE_SIZE]
         print("Truncated to SAMPLE_SIZE:", len(samples))
 
-    random.shuffle(samples)
+    random.Random(RANDOM_SEED).shuffle(samples)
 
     # split 90/5/5
     n = len(samples)
